@@ -1,0 +1,15 @@
+diff --git a/netifd-morse/lib/netifd/wireless/morse.sh b/netifd-morse/lib/netifd/wireless/morse.sh
+index 68fe62a..2691273 100755
+--- a/netifd-morse/lib/netifd/wireless/morse.sh
++++ b/netifd-morse/lib/netifd/wireless/morse.sh
+@@ -1123,7 +1123,9 @@ morse_wpa_supplicant_add() {
+ 		return 1
+ 	}
+ 	morse_wpa_supplicant_prepare_interface "$_ifname"
+-	if [ "$mode" = "sta" ]; then
++	if [ "$auto" = "1" -a "$mode" = "sta" ]; then
++		wpa_supplicant_add_cred "$ifname"
++	elif [ "$mode" = "sta" ]; then
+ 		morse_override_wpa_supplicant_add_network "$_ifname"
+ 	else
+ 		morse_override_wpa_supplicant_add_network "$_ifname" "$freq" "$htmode" "$noscan" "$enable_sgi"

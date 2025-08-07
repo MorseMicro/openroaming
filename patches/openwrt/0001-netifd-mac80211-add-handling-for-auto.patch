@@ -1,0 +1,99 @@
+diff --git a/package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh b/package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh
+index acb957a7a9..0166fcf246 100644
+--- a/package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh
++++ b/package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh
+@@ -946,7 +946,9 @@ mac80211_setup_supplicant() {
+ 
+ 	wpa_supplicant_prepare_interface "$ifname" nl80211 || return 1
+ 
+-	if [ "$mode" = "sta" ]; then
++	if [ "$auto" = "1" -a "$mode" = "sta" ]; then
++		wpa_supplicant_add_cred "$ifname"
++	elif [ "$mode" = "sta" ]; then
+ 		wpa_supplicant_add_network "$ifname"
+ 	else
+ 		wpa_supplicant_add_network "$ifname" "$freq" "$htmode" "$hostapd_noscan"
+diff --git a/package/network/services/hostapd/files/hostapd.sh b/package/network/services/hostapd/files/hostapd.sh
+index 1ebb1b901b..28696e1081 100644
+--- a/package/network/services/hostapd/files/hostapd.sh
++++ b/package/network/services/hostapd/files/hostapd.sh
+@@ -383,6 +383,9 @@ hostapd_common_add_bss_config() {
+ 	config_add_string fils_dhcp
+ 
+ 	config_add_int ocv
++
++	config_add_string realm
++	config_add_boolean auto
+ }
+ 
+ hostapd_set_vlan_file() {
+@@ -1222,7 +1225,7 @@ wpa_supplicant_prepare_interface() {
+ 
+ 	_wpa_supplicant_common "$1"
+ 
+-	json_get_vars mode wds multi_ap
++	json_get_vars mode wds multi_ap auto
+ 
+ 	[ -n "$network_bridge" ] && {
+ 		fail=
+@@ -1598,6 +1601,60 @@ EOF
+ 	return 0
+ }
+ 
++append_roaming_consortium() {
++	[ -n "$1" ] && append cred_data "roaming_consortium=$1" "$N$T"
++}
++
++wpa_supplicant_add_cred() {
++
++	_wpa_supplicant_common "$1"
++	wireless_vif_parse_encryption
++
++	json_get_vars \
++		ieee80211w \
++		realm \
++		eap_type \
++		iw_roaming_consortium
++
++	set_default ieee80211w 2
++
++	local cred_data=
++	local T="	"
++
++	cat >> "$_config" <<EOF
++interworking=1
++hs20=1
++auto_interworking=1
++${ieee80211w:+pmf=$ieee80211w}
++EOF
++
++	if [ "$eap_type" = "ttls" ]; then
++		json_get_vars identity ca_cert password auth
++
++		set_default auth MSCHAPV2
++
++		[ -n "$ca_cert" ] && append cred_data "ca_cert=\"$ca_cert\"" "$N$T"
++		[ -n "$identity" ] && append cred_data "username=\"$identity\"" "$N$T"
++		[ -n "$password" ] && append cred_data "password=\"$password\"" "$N$T"
++
++		phase2proto="auth="
++		# TODO - extend with other auth types as required
++		append network_data "phase2=\"$phase2proto$auth\"" "$N$T"
++
++		append cred_data "eap=$(echo $eap_type | tr 'a-z' 'A-Z')" "$N$T"
++	fi
++
++	json_for_each_item append_roaming_consortium iw_roaming_consortium
++
++	cat >> "$_config" <<EOF
++cred={
++	${realm:+realm=$realm}
++	$cred_data
++}
++EOF
++	return 0
++}
++
+ hostapd_common_cleanup() {
+ 	killall meshd-nl80211
+ }

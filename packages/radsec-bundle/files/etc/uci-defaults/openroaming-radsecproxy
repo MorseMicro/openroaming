@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# This file applies a 'default' radsecproxy configuration.
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+config_load radsecproxy
+
+# Do not change or add if credentials already exists
+if ! uci -q get radsecproxy.or_certs > /dev/null; then
+	uci batch <<- END
+		set radsecproxy.or_certs='tls'
+		set radsecproxy.or_certs.name='OR-certs'
+		set radsecproxy.or_certs.CACertificatePath='/etc/openroaming/certs/'
+		set radsecproxy.or_certs.CACertificateFile='/etc/openroaming/certs/ca.crt'
+		set radsecproxy.or_certs.certificateFile='/etc/openroaming/certs/entity.crt'
+		set radsecproxy.or_certs.certificateKeyFile='/etc/openroaming/private/entity.key.pem'
+		set radsecproxy.or_certs.TLSVersion='TLS1_2:'
+	END
+fi
+
+if ! uci -q get radsecproxy.or_dynamic > /dev/null; then
+	uci batch <<- END
+		set radsecproxy.or_dynamic='server'
+		set radsecproxy.or_dynamic.name='OR-dynamic'
+		set radsecproxy.or_dynamic.type='tls'
+		set radsecproxy.or_dynamic.tls='OR-certs'
+		set radsecproxy.or_dynamic.secret='radsec'
+		set radsecproxy.or_dynamic.certificateNameCheck='0'
+		set radsecproxy.or_dynamic.dynamicLookupCommand='/usr/lib/openroaming/scripts/naptr-openroaming.sh'
+	END
+fi
+
+if ! uci -q get radsecproxy.or_dynamic_acct > /dev/null; then
+	uci batch <<- END
+		set radsecproxy.or_dynamic_acct='server'
+		set radsecproxy.or_dynamic_acct.name='OR-dynamic-acct'
+		set radsecproxy.or_dynamic_acct.type='tls'
+		set radsecproxy.or_dynamic_acct.tls='OR-certs'
+		set radsecproxy.or_dynamic_acct.secret='radsec'
+		set radsecproxy.or_dynamic_acct.certificateNameCheck='0'
+		set radsecproxy.or_dynamic_acct.dynamicLookupCommand='/usr/lib/openroaming/scripts/naptr-openroaming.sh aaa+acct:radius.tls.tcp'
+	END
+fi
+
+if ! uci -q get radsecproxy.@realm[0]; then
+	uci batch <<- END
+		add radsecproxy realm
+		set radsecproxy.@realm[-1].name='/@.+\..+$/'
+		set radsecproxy.@realm[-1].server='OR-dynamic'
+		set radsecproxy.@realm[-1].accountingResponse='1'
+		set radsecproxy.@realm[-1].replyMessage='Realm not found in OpenRoaming'
+	END
+fi
+
+if ! uci -q get radsecproxy.@client[0] > /dev/null; then
+	uci batch <<- END
+		add radsecproxy client
+		set radsecproxy.@client[-1].name='127.0.0.1/32'
+		set radsecproxy.@client[-1].type='udp'
+		set radsecproxy.@client[-1].secret=CONFIG_OR_RADIUS_CLIENT_SECRET
+	END
+fi
+
+if ! uci -q get radsecproxy.@options[0].ListenUDP > /dev/null; then
+	uci batch <<- END
+		delete radsecproxy.@options[0].include
+		add_list radsecproxy.@options[0].ListenUDP='127.0.0.1:11812'
+		add_list radsecproxy.@options[0].ListenUDP='127.0.0.1:11813'
+	END
+fi
+
+uci commit radsecproxy

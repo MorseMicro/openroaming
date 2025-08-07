@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# This file adds a number of defaults to ease the bringup of AP and client 
+# interfaces compatible with OpenRoaming. These interfaces should be treated
+# as templates, as credentials and network configuration still needs to be
+# configured by the user.
+
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+_add_openroaming_interfaces() {
+	local config="$1"
+
+	if ! uci -q get wireless.or_ap_$config > /dev/null; then
+		uci batch <<- END
+			set wireless.or_ap_$config='wifi-iface'
+			set wireless.or_ap_$config.device='$config'
+			set wireless.or_ap_$config.mode='ap'
+			set wireless.or_ap_$config.ssid='OpenRoaming'
+			set wireless.or_ap_$config.encryption='wpa3'
+			set wireless.or_ap_$config.auth_server='127.0.0.1'
+			set wireless.or_ap_$config.auth_secret='radiusecret'
+			set wireless.or_ap_$config.acct_server='127.0.0.1'
+			set wireless.or_ap_$config.acct_secret='radiussecret'
+			set wireless.or_ap_$config.network='lan'
+			set wireless.or_ap_$config.hs20_operating_class='5173'
+			set wireless.or_ap_$config.iw_venue_group='1'
+			set wireless.or_ap_$config.iw_venue_type='7'
+			set wireless.or_ap_$config.ieee80211w='2'
+			set wireless.or_ap_$config.nasid='OpenRoamingWRT'
+			set wireless.or_ap_$config.iw_ipaddr_type_availability='11'
+			set wireless.or_ap_$config.iw_access_network_type='2'
+			set wireless.or_ap_$config.iw_network_auth_type='00'
+			set wireless.or_ap_$config.hs20_oper_friendly_name='eng:OpenRoaming'
+			add_list wireless.or_ap_$config.iw_venue_name='eng:OpenRoaming'
+			add_list wireless.or_ap_$config.iw_venue_url='1:https://openroaming.org'
+			set wireless.or_ap_$config.proxy_arp='1'
+			set wireless.or_ap_$config.ieee80211k='1'
+			add_list wireless.or_ap_$config.iw_domain_name='openroaming.org'
+			add_list wireless.or_ap_$config.iw_roaming_consortium='5a03ba0000'
+			add_list wireless.or_ap_$config.iw_roaming_consortium='004096'
+			add_list wireless.or_ap_$config.iw_nai_realm='0,*.openroaming.org,13[5:6],21[2:4][5:7],23[5:1][5:2],50[5:1][5:2],18[5:1][5:2]'
+			set wireless.or_ap_$config.anqp_domain_id='0'
+			set wireless.or_ap_$config.bss_transition='1'
+			set wireless.or_ap_$config.disable_dgaf='1'
+			set wireless.or_ap_$config.hotspot20='1'
+			set wireless.or_ap_$config.hs20='1'
+			set wireless.or_ap_$config.hs20_deauth_req_timeout='60'
+			set wireless.or_ap_$config.internet='1'
+			set wireless.or_ap_$config.iw_asra='0'
+			set wireless.or_ap_$config.iw_disable_dgaf='1'
+			set wireless.or_ap_$config.iw_enabled='1'
+			set wireless.or_ap_$config.iw_esr='0'
+			set wireless.or_ap_$config.iw_internet='1'
+			set wireless.or_ap_$config.iw_interworking='1'
+			set wireless.or_ap_$config.iw_uesa='0'
+			set wireless.or_ap_$config.request_cui='1'
+			set wireless.or_ap_$config.wnm_sleep_mode_no_keys='1'
+			set wireless.or_ap_$config.wds='1'
+			set wireless.or_ap_$config.disabled='1'
+		END
+	fi
+
+	if ! uci -q get wireless.or_client_$config > /dev/null; then
+		uci batch <<- END
+			set wireless.or_client_$config='wifi-iface'
+			set wireless.or_client_$config.device='$config'
+			set wireless.or_client_$config.network='wwan'
+			set wireless.or_client_$config.mode='sta'
+			set wireless.or_client_$config.auto='1'
+			set wireless.or_client_$config.ieee80211w='2'
+			set wireless.or_client_$config.wds='1'
+			add_list wireless.or_client_$config.iw_roaming_consortium='5a03ba0000'
+			set wireless.or_client_$config.eap_type='ttls'
+			set wireless.or_client_$config.identity='user@realm'
+			set wireless.or_client_$config.password='password'
+			set wireless.or_client_$config.ca_cert='/etc/ssl/certs/or-client.crt'
+			set wireless.or_client_$config.disabled='1'
+		END
+	fi
+}
+
+
+config_load wireless
+config_foreach _add_openroaming_interfaces wifi-device
+
+uci commit wireless

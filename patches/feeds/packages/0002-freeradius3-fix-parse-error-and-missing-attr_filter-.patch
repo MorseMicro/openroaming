@@ -1,0 +1,41 @@
+From c21778d59ecb0f202af62ca58b7fe2def028b3fd Mon Sep 17 00:00:00 2001
+From: Arien Judge <arien.judge@morsemicro.com>
+Date: Mon, 4 Aug 2025 02:13:42 +1000
+Subject: [PATCH 2/2] freeradius3: fix parse error and missing attr_filter, fix
+ bug #23188
+
+rfc4072 should be enabled to allow EAP-Key-Name to be parsed correctly
+in user post authentication.
+
+Additionally, pull in coa attr_filter as per 104098c to enable
+freeradius to start.
+
+Signed-off-by: Arien Judge <arien.judge@morsemicro.com>
+---
+ net/freeradius3/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/freeradius3/Makefile b/net/freeradius3/Makefile
+index 6939f85f4..7078cb84d 100644
+--- a/net/freeradius3/Makefile
++++ b/net/freeradius3/Makefile
+@@ -131,6 +131,7 @@ define Package/freeradius3-mod-attr-filter/conffiles
+ /etc/freeradius3/mods-config/attr_filter/access_challenge
+ /etc/freeradius3/mods-config/attr_filter/access_reject
+ /etc/freeradius3/mods-config/attr_filter/accounting_response
++/etc/freeradius3/mods-config/attr_filter/coa
+ /etc/freeradius3/mods-config/attr_filter/post-proxy
+ /etc/freeradius3/mods-config/attr_filter/pre-proxy
+ endef
+@@ -536,7 +537,7 @@ PKG_DICTIONARIES:= \
+ 	compat \
+ 	freeradius freeradius.internal \
+ 	rfc2865 rfc2866 rfc2867 rfc2868 rfc2869 rfc3162 rfc3576 rfc3580 \
+-	rfc4372 rfc4675 rfc4679 rfc5580\
++	rfc4072 rfc4372 rfc4675 rfc4679 rfc5580 \
+ 	microsoft \
+ 	wispr \
+ 
+-- 
+2.25.1
+

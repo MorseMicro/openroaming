@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ -d /etc/freeradius3/backup ]; then
+	exit 1
+fi
+
+mkdir -p /etc/freeradius3/backup
+cp -f /etc/freeradius3/sites-enabled/default /etc/freeradius3/backup/sites-enabled/default
+cp -f /etc/freeradius3/proxy.conf /etc/freeradius3/backup/proxy.conf
+cp -f /etc/freeradius3/clients.conf /etc/freeradius3/backup/clients.conf
+cp -f /etc/freeradius3/openroaming/sites-enabled/default /etc/freeradius3/sites-enabled/default
+cp -f /etc/freeradius3/openroaming/proxy.conf /etc/freeradius3/proxy.conf
+cp -f /etc/freeradius3/openroaming/clients.conf /etc/freeradius3/clients.conf

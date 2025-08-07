@@ -1,0 +1,25 @@
+config OR_OPERATOR_NAME
+    string "OpenRoaming operator name"
+    depends on PACKAGE_radsec-bundle
+
+config OR_RADIUS_CLIENT_SECRET
+    string "RADIUS secret key"
+    depends on PACKAGE_radsec-bundle
+
+config OR_RADSEC_CERT
+    string "Path to radsec certificate (.crt)"
+    depends on PACKAGE_radsec-bundle
+    help
+      Absolute or relative path to client certificate file
+
+config OR_RADSEC_KEY
+    string "Path to radsec private key (.key)"
+    depends on PACKAGE_radsec-bundle
+    help
+      Absolute or relative path to private key file
+
+config OR_RADSEC_CA_CERT
+    string "Path to CA certificate (.crt)"
+    depends on PACKAGE_radsec-bundle
+    help
+      Path to the CA cert file to validate server certs
