@@ -37,6 +37,7 @@ fi
 find "$PATCHDIR" -type f -name '*.patch' | while read -r patch_file; do
 	rel_path="${patch_file#$PATCHDIR/}"
 	target_dir="$(dirname "$rel_path")"
+	[ "$target_dir" = "openwrt" ] && target_dir=.
 
 	if [ ! -d "$target_dir" ]; then
 		echo "$target_dir does not exist."
